@@ -1,0 +1,9 @@
+<launch>
+<arg name="veh" default="$(env VEHICLE_NAME)"/>
+<remap from="/$(arg veh)/line_detector_node/image/compressed" to="/$(arg veh)/camera_node/image/compressed"/>
+
+<include file = "$(find line_detector)/launch/line_detector_node.launch">
+<arg name="veh" value="$(arg veh)"/>
+<arg name="param_file_name" value="default"/>
+</include>
+</launch>

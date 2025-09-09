@@ -1,0 +1,14 @@
+# challenge name(s); defaults to all compatible challenges
+challenge: ["lx22-visservoing"]
+
+# conventions + format
+protocol: "aido2_db18_agent-z2"
+
+# any user label - displayed in "challenges list"
+user-label: "<EXERCISE_NAME_HERE>"
+
+# any JSON payload
+user-payload: {}
+
+# validation challenge
+validation_challenge: "aido-hello-sim-validation"
