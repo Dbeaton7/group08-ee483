@@ -1,0 +1,17 @@
+docs/build
+*pyc
+
+# documentation artifacts
+html/*
+
+# otherwise CI thinks index not clean
+*.resolved
+
+*.DS_Store
+
+# project-specific
+
+Lab1-open-loopMM/lab1/ex_workspace/.catkin_tools
+Lab1-open-loopMM/lab1/ex_workspace/build
+Lab1-open-loopMM/lab1/ex_workspace/devel
+Lab1-open-loopMM/lab1/ex_workspace/logs
