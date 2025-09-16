@@ -47,6 +47,8 @@ ENV DT_REPO_PATH "${REPO_PATH}"
 ENV DT_LAUNCH_PATH "${LAUNCH_PATH}"
 ENV DT_LAUNCHER "${LAUNCHER}"
 
+RUN wget -qO - https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | sudo apt-key add -
+
 # install apt dependencies
 COPY ./dependencies-apt.txt "${REPO_PATH}/"
 RUN dt-apt-install ${REPO_PATH}/dependencies-apt.txt

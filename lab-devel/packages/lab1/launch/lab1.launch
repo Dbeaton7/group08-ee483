@@ -1,0 +1,6 @@
+<launch>
+<group ns = "driver">
+    <node pkg="lab1" name="driver_node" type="mmdriver.py" output="screen"/>
+    <!--Starts the driver node-->
+</group>
+</launch>
