@@ -8,6 +8,8 @@ class Driver():#CHANGE CLASSNAME to the name of your class
         self.veh_name = os.environ['VEHICLE_NAME']
         #self.topic = std_msg.msg.String('/ee483mm08/wheels_driver_node/wheels_cmd')
         self.pub = rospy.Publisher('/ee483mm08/wheels_driver_node/wheels_cmd', WheelsCmdStamped, queue_size = 10)
+        self.speed =  0.5
+        self.state = 'forward'
         #self.subscriber = 'duckietown_msgs/WheelsCmdStamped'
             # USING PARAMETER TO GET THE NAME OF THE VEHICLE
             # THIS WILL BE USEFUL TO SPECIFY THE NAME OF THE TOPIC
@@ -16,10 +18,22 @@ class Driver():#CHANGE CLASSNAME to the name of your class
     def drive(self): # CHANGE TO THE NAME OF YOUR FUNCTION
         print("running function")
         cmd_to_publish = WheelsCmdStamped()
-        cmd_to_publish.header.stamp = rospy.Time.now()
-        cmd_to_publish.vel_right = 0
-        cmd_to_publish.vel_left = 0
-        self.pub.publish(cmd_to_publish)
+        turns = 0
+
+        if self.state == 'forward':
+            cmd_to_publish.header.stamp = rospy.Time.now()
+            cmd_to_publish.vel_right = self.speed
+            cmd_to_publish.vel_left = self.speed
+            self.pub.publish(cmd_to_publish)
+            rospy.sleep(2)
+            state == 'turning'
+        
+        elif self.state == 'turning':
+            turns += 1
+            cmd_to_publish.header.stamp = rospy.Time.now()
+
+        elif self.state == 'stop':
+            cmd_to_publish.header.stamp = rospy.Time.now()
 
 #WRITE THE CODE TO MAKE THE MM GO AROUND THE BLOCK
 if __name__ == "__main__": ## The main function which will be called when your python sc
@@ -34,3 +48,15 @@ if __name__ == "__main__": ## The main function which will be called when your p
             drive.drive() # calling your node function
     except rospy.ROSInterruptException:
         pass
+
+
+
+'''
+    def drive(self): # CHANGE TO THE NAME OF YOUR FUNCTION
+        print("running function")
+        cmd_to_publish = WheelsCmdStamped()
+        cmd_to_publish.header.stamp = rospy.Time.now()
+        cmd_to_publish.vel_right = 0
+        cmd_to_publish.vel_left = 0
+        self.pub.publish(cmd_to_publish)
+'''
