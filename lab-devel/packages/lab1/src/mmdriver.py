@@ -6,7 +6,7 @@ from duckietown_msgs.msg import WheelsCmdStamped # Import the message for the wh
 class Driver():#CHANGE CLASSNAME to the name of your class
     def __init__(self):
         self.veh_name = os.environ['VEHICLE_NAME']
-        self.pub = rospy.Publisher('/ee483mm14/wheels_driver_node/wheels_cmd', WheelsCmdStamped, queue_size = 10)
+        self.pub = rospy.Publisher('/ee483mm08/wheels_driver_node/wheels_cmd', WheelsCmdStamped, queue_size = 10)
         self.speed =  0.2 #was 0.5
         self.state = 'forward'
         self.turns = 0

@@ -1,0 +1,5 @@
+<launch>
+
+<node pkg="lab2" name="img_flip" type="img_flip.py"/>
+
+</launch>
