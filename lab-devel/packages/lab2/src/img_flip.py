@@ -13,6 +13,8 @@ class ImageFlipper:
         rospy.Subscriber("/ee483mm08/camera_node/image/compressed", CompressedImage, self.create_filter)
         self.pub_white = rospy.Publisher("white", Image, queue_size=10)
         self.pub_yellow = rospy.Publisher("yellow", Image, queue_size=10)
+        self.pub_edges_white = rospy.Publisher("edges_white", Image, queue_size=10)
+        self.pub_edges_yellow = rospy.Publisher("edges_yellow", Image, queue_size=10)
 
     def flipper_cb(self,msg):
         #convert to a ROS image using the bridge
@@ -31,25 +33,32 @@ class ImageFlipper:
     def create_filter(self, msg):
         print("I got here")
         #convert to a ROS image using the bridge
-        cv_img = self.bridge.compressed_imgmsg_to_cv2(msg)
+        cv_img = self.bridge.compressed_imgmsg_to_cv2(msg, "bgr8")
         hsv_img = cv2.cvtColor(cv_img, cv2.COLOR_BGR2HSV)
 
         # create the yellow mask
-        cv_mask_yellow = cv2.inRange(hsv_img, (0,103,151), (59,255,255))
+        cv_mask_yellow = cv2.inRange(hsv_img, (0,103,140), (59,255,255))
 
         # create the white mask
-        cv_mask_white = cv2.inRange(hsv_img, (0,0,219), (180,70,255))
-
-        # masked_yellow = cv2.bitwise_and(hsv_img, hsv_img, cv_mask_yellow)
-        # masked_white = cv2.bitwise_and(hsv_img, hsv_img, cv_mask_white)
+        cv_mask_white = cv2.inRange(hsv_img, (70,0,145), (140,120,255))
 
         #convert new image to ROS to send
-        ros_masked_yellow = self.bridge.cv2_to_imgmsg(cv_mask_yellow, "bgr8")
-        ros_masked_white = self.bridge.cv2_to_imgmsg(cv_mask_white, "bgr8")
+
+        edges = cv2.Canny(hsv_img, 100, 200)
+        white_boundaries = cv2.bitwise_and(cv_mask_white, edges)
+        yellow_boundaries = cv2.bitwise_and(cv_mask_yellow, edges)
+
+        ros_masked_yellow = self.bridge.cv2_to_imgmsg(cv_mask_yellow, "mono8")
+        ros_masked_white = self.bridge.cv2_to_imgmsg(cv_mask_white, "mono8")
+        ros_white_boundaries = self.bridge.cv2_to_imgmsg(white_boundaries, "mono8")
+        ros_yellow_boundaries = self.bridge.cv2_to_imgmsg(yellow_boundaries, "mono8")
 
         #publish flipped image
         self.pub_white.publish(ros_masked_white)
         self.pub_yellow.publish(ros_masked_yellow)
+        self.pub_edges_white.publish(ros_white_boundaries)
+        self.pub_edges_yellow.publish(ros_yellow_boundaries)
+
 
 if __name__=="__main__":
     #initialize our node and create a publisher as normal
