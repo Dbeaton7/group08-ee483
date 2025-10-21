@@ -37,7 +37,7 @@ class ImageFlipper:
         hsv_img = cv2.cvtColor(cv_img, cv2.COLOR_BGR2HSV)
 
         # create the yellow mask
-        cv_mask_yellow = cv2.inRange(hsv_img, (0,103,140), (59,255,255))
+        cv_mask_yellow = cv2.inRange(hsv_img, (15,40,40), (45,255,255))
 
         # create the white mask
         cv_mask_white = cv2.inRange(hsv_img, (70,0,145), (140,120,255))
