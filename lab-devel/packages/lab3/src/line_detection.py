@@ -10,7 +10,7 @@ from duckietown_msgs.msg import Segment, SegmentList, Vector2D
 from sensor_msgs.msg import Image, CompressedImage
 from cv_bridge import CvBridge
 from std_srvs.srv import SetBool, SetBoolResponse
-
+from duckietown_msgs.msg import LanePose, Twist2DStamped
 
 
 class ImageProcessor: 
@@ -21,6 +21,7 @@ class ImageProcessor:
         self.bridge = CvBridge()
         veh_name = os.environ['VEHICLE_NAME']
         rospy.Subscriber(f"/{veh_name}/camera_node/image/compressed", CompressedImage, self.processor, queue_size=1, buff_size= 2**24)
+        rospy.Subscriber(f"/{veh_name}//lane_filter_node/lane_pose)", LanePose, self.lane_pose_callback, queue_size=1, buff_size= 2**24) #possibly self.lane_pose_callback, possible queue size and buff size
         #rospy.Subscriber("image", Image, self.processor, queue_size=1, buff_size= 2**24)
         self.pub_edges = rospy.Publisher("image_edges", Image, queue_size=10)
         self.pub_yellow_mask = rospy.Publisher("image_mask_yellow", Image, queue_size=10)
@@ -29,6 +30,7 @@ class ImageProcessor:
         self.pub_white_lines = rospy.Publisher("image_lines_white", Image, queue_size=10)
         self.pub_lines = rospy.Publisher("image_lines", Image, queue_size=10)
         self.pub_segments = rospy.Publisher("line_detector_node/segment_list", SegmentList, queue_size=10)
+        self.pub_lane_pose = rospy.Publisher("/ee483mm08/car_cmd_switch_node/cmd", Twist2DStamped, queue_size=10)
         
         #variables used in class
         self.hsv_image = None
@@ -36,6 +38,39 @@ class ImageProcessor:
         self.cv_crop = None
         self.white_mask = None
         self.yellow_mask = None
+
+        # Default PID params
+
+        self.ki = 0.02
+        self.kp = 1.2
+        self.kd = 0.35
+
+    def lane_pose_callback(data):
+        rospy.loginfo("Received data from lane pose node: %s", data.phi)
+
+        error = (-1)*data.phi
+        
+        # Check if parameter "kp" exists first
+        if rospy.has_param("kp"):
+            #Get the values of "kp" and store it in self.kp
+            self.kp = rospy.get_param("kp")
+
+        if rospy.has_param("ki"):
+            #Get the values of "ki" and store it in self.ki
+            self.kp = rospy.get_param("ki")
+
+        if rospy.has_param("kd"):
+            #Get the values of "kd" and store it in self.kd
+            self.kp = rospy.get_param("kd")
+
+        controller_output = self.kp*error + self.ki*error + self.kd*error
+        
+        car_cmd = Twist2DStamped()
+        car_cmd.v = 0
+        car_cmd.omega = controller_output
+
+        self.pub_lane_pose.publish(car_cmd)
+
 
     def processor(self, msg):
         self.cv_img = self.bridge.compressed_imgmsg_to_cv2(msg, "bgr8")
@@ -196,9 +231,6 @@ class ImageProcessor:
         return True,""
 
 
-
-
-        
 
 if __name__=="__main__":
     # initialize our node and create a publisher as normal
