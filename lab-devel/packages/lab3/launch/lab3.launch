@@ -52,9 +52,9 @@
         <node pkg = "lab3" type = "line_detection.py" name = "line_detection" output = "screen">
 
             <!-- Add your controller and odometry nodes below -->
-            <param name="kp" value="1.2"/>
+            <param name="kp" value="2.5"/>
             <param name="ki" value="0.02"/>
-            <param name="kd" value="0.35"/>
+            <param name="kd" value="0.2"/>
             
             <param name="integral_limit" value="1.0"/>
             <param name="derivative_alpha" value="0.9"/>

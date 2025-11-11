@@ -21,7 +21,7 @@ class ImageProcessor:
         self.bridge = CvBridge()
         veh_name = os.environ['VEHICLE_NAME']
         rospy.Subscriber(f"/{veh_name}/camera_node/image/compressed", CompressedImage, self.processor, queue_size=1, buff_size= 2**24)
-        rospy.Subscriber(f"/{veh_name}//lane_filter_node/lane_pose)", LanePose, self.lane_pose_callback, queue_size=1, buff_size= 2**24) #possibly self.lane_pose_callback, possible queue size and buff size
+        rospy.Subscriber(f"/{veh_name}//lane_filter_node/lane_pose", LanePose, self.lane_pose_callback, queue_size=1, buff_size= 2**24) #possibly self.lane_pose_callback, possible queue size and buff size
         #rospy.Subscriber("image", Image, self.processor, queue_size=1, buff_size= 2**24)
         self.pub_edges = rospy.Publisher("image_edges", Image, queue_size=10)
         self.pub_yellow_mask = rospy.Publisher("image_mask_yellow", Image, queue_size=10)
@@ -40,12 +40,14 @@ class ImageProcessor:
         self.yellow_mask = None
 
         # Default PID params
+        self.cumulative_error = 0
+        self.dt = 0
+        self.last_error = 0
+        self.ki = 0
+        self.kp = 5
+        self.kd = 0
 
-        self.ki = 0.02
-        self.kp = 1.2
-        self.kd = 0.35
-
-    def lane_pose_callback(data):
+    def lane_pose_callback(self, data):
         rospy.loginfo("Received data from lane pose node: %s", data.phi)
 
         error = (-1)*data.phi
@@ -63,14 +65,35 @@ class ImageProcessor:
             #Get the values of "kd" and store it in self.kd
             self.kp = rospy.get_param("kd")
 
-        controller_output = self.kp*error + self.ki*error + self.kd*error
+        controller_output = self.PID(error)
         
         car_cmd = Twist2DStamped()
         car_cmd.v = 0
         car_cmd.omega = controller_output
 
         self.pub_lane_pose.publish(car_cmd)
+        
+    def integral(self, value, time):
+        self.cumulative_error = self.cumulative_error + (value * time)
+        return self.cumulative_error
 
+    def derivative(self, last_value, value, time):
+        d = (value - last_value)/ time
+        return d
+
+    def PID(self, data):
+        value = data
+        time = rospy.get_rostime().nsecs
+        time_diff = self.dt - time
+        i = self.integral(value, time_diff)
+        d = self.derivative(self.last_error, value, time_diff)
+        
+        pid = self.kp*value + self.ki*i + self.kd*d
+
+
+        self.last_error = value
+        self.dt = time
+        return pid
 
     def processor(self, msg):
         self.cv_img = self.bridge.compressed_imgmsg_to_cv2(msg, "bgr8")
