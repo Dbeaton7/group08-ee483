@@ -21,7 +21,8 @@ class ImageProcessor:
         self.bridge = CvBridge()
         veh_name = os.environ['VEHICLE_NAME']
         rospy.Subscriber(f"/{veh_name}/camera_node/image/compressed", CompressedImage, self.processor, queue_size=1, buff_size= 2**24)
-        rospy.Subscriber(f"/{veh_name}//lane_filter_node/lane_pose", LanePose, self.lane_pose_callback, queue_size=1, buff_size= 2**24) #possibly self.lane_pose_callback, possible queue size and buff size
+        #rospy.Subscriber(f"/{veh_name}//lane_filter_node/lane_pose", LanePose, self.lane_pose_callback, queue_size=1, buff_size= 2**24) #possibly self.lane_pose_callback, possible queue size and buff size
+        rospy.Subscriber(f"/{veh_name}//lane_filter_node/lane_pose", LanePose, self.pid_moving, queue_size=1, buff_size= 2**24)
         #rospy.Subscriber("image", Image, self.processor, queue_size=1, buff_size= 2**24)
         self.pub_edges = rospy.Publisher("image_edges", Image, queue_size=10)
         self.pub_yellow_mask = rospy.Publisher("image_mask_yellow", Image, queue_size=10)
@@ -46,6 +47,39 @@ class ImageProcessor:
         self.ki = 0
         self.kp = 5
         self.kd = 0
+        self.v = 0.4
+
+    #new node for subsriber
+
+    def pid_moving(self, data):
+        rospy.loginfo("Received data from lane pose node: %s", data.phi)
+
+        error = (-1)*data.phi
+        # Check if parameter "kp" exists first
+        if rospy.has_param("kp"):
+            #Get the values of "kp" and store it in self.kp
+            self.kp = rospy.get_param("kp")
+
+        if rospy.has_param("ki"):
+            #Get the values of "ki" and store it in self.ki
+            self.ki = rospy.get_param("ki")
+
+        if rospy.has_param("kd"):
+            #Get the values of "kd" and store it in self.kd
+            self.kd = rospy.get_param("kd")
+        
+        if rospy.has_param("v"):
+            self.v = rospy.get_param("v")
+        
+        controller_output = self.PID(error)
+
+        car_cmd = Twist2DStamped()
+        car_cmd.v = self.v
+        car_cmd.omega = controller_output
+
+        self.pub_lane_pose.publish(car_cmd)
+
+
 
     def lane_pose_callback(self, data):
         rospy.loginfo("Received data from lane pose node: %s", data.phi)
