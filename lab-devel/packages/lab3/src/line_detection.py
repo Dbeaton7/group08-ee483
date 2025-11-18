@@ -11,6 +11,7 @@ from sensor_msgs.msg import Image, CompressedImage
 from cv_bridge import CvBridge
 from std_srvs.srv import SetBool, SetBoolResponse
 from duckietown_msgs.msg import LanePose, Twist2DStamped
+from std_msgs.msg import Float32
 
 
 class ImageProcessor: 
@@ -32,6 +33,12 @@ class ImageProcessor:
         self.pub_lines = rospy.Publisher("image_lines", Image, queue_size=10)
         self.pub_segments = rospy.Publisher("line_detector_node/segment_list", SegmentList, queue_size=10)
         self.pub_lane_pose = rospy.Publisher("/ee483mm08/car_cmd_switch_node/cmd", Twist2DStamped, queue_size=10)
+
+        # Publishers for plots (raw vs filtered data)
+        self.phi_raw_pub= rospy.Publisher("/ee483mm08/phi_raw", Float32, queue_size=10)
+        self.phi_filt_pub = rospy.Publisher("/ee483mm08/phi_filtered", Float32, queue_size=10)
+        self.alpha = 0.2
+        self.phi_filt = None
         
         #variables used in class
         self.hsv_image = None
@@ -53,6 +60,23 @@ class ImageProcessor:
 
     def pid_moving(self, data):
         rospy.loginfo("Received data from lane pose node: %s", data.phi)
+
+        # Code for plots, here is the logic
+        # Let the raw phi values coming from the lane_pose node equal to the variable phi
+        # Then publish those phi values for rqt plot
+        phi = data.phi
+        self.phi_raw_pub.publish(phi)
+
+        # Now do the same for the filtered phi values
+        if self.phi_filt is None:
+            self.phi_filt = phi # If this is the first call from lane_pose, then phi_filt is zero by default, so just set it equal to phi at first
+        else:
+            self.phi_filt = phi * self.alpha + (1 - self.alpha) * self.phi_filt # otherwise phi_filt already has a value, so use this equation
+            # equation is basically like a weighted average between the raw and existing filtered data
+            # self.alpha can go from 0 -> 1, closer to 0 means that the data intervals are slower (smaller) but more smooth, closer to 1 means the data intervals are larger and more choppy
+
+        self.phi_filt_pub.publish(self.phi_filt)
+
 
         error = (-1)*data.phi
         # Check if parameter "kp" exists first
@@ -76,11 +100,11 @@ class ImageProcessor:
         car_cmd = Twist2DStamped()
         car_cmd.v = self.v
         car_cmd.omega = controller_output
+        car_cmd.header.stamp = rospy.Time.now() 
 
-        self.pub_lane_pose.publish(car_cmd)
+        self.pub_lane_pose.publish(car_cmd)                                                                        
 
-
-
+    
     def lane_pose_callback(self, data):
         rospy.loginfo("Received data from lane pose node: %s", data.phi)
 
