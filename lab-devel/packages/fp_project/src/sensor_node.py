@@ -21,7 +21,7 @@ class SensorObjectDetector:
         rospy.Subscriber("/ee483mm08/front_center_tof_driver_node/range", Range, self.range_publisher)
         self.pub_cmd = rospy.Publisher("/ee483mm08/car_cmd_switch_node/cmd", Twist2DStamped, queue_size=10)
         self.pub = rospy.Publisher('/ee483mm08/wheels_driver_node/wheels_cmd', WheelsCmdStamped, queue_size = 10)
-        self.v = 0
+        self.v = rospy.get_param("velocity") if rospy.has_param("velocity") else 0 
         self.omega = 0
         self.turns = 0
         self.state = "turn_left"
@@ -112,6 +112,7 @@ class SensorObjectDetector:
                     # self.pub.publish(cmd_to_publish)
                     # rospy.sleep(0.5)
                     self.avoiding = False
+                    self.turns = 0
                     return
                 
                 # elif self.state == 'final_stop':
