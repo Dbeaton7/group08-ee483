@@ -14,6 +14,7 @@ from sensor_msgs.msg import Image, CompressedImage
 from cv_bridge import CvBridge
 from std_srvs.srv import SetBool, SetBoolResponse
 from duckietown_msgs.msg import LanePose, Twist2DStamped
+from duckietown_msgs.msg import WheelsCmdStamped
 
 class SensorObjectDetector:
     def __init__(self):
@@ -23,7 +24,7 @@ class SensorObjectDetector:
         self.v = 0
         self.omega = 0
         self.turns = 0
-        self.state = "turning"
+        self.state = "turn_left"
         self.avoiding = False
 
     def range_publisher(self, msg):
@@ -41,112 +42,102 @@ class SensorObjectDetector:
 
         cmd_to_publish = WheelsCmdStamped()
         while self.avoiding:
-        try:
-            if self.state == 'forward':
-                cmd_to_publish.header.stamp = rospy.Time.now()
-                cmd_to_publish.vel_right = self.speed
-                cmd_to_publish.vel_left = self.speed
-                self.pub.publish(cmd_to_publish)
-                rospy.sleep(5)
+            try:
+                if self.state == 'forward':
+                    cmd_to_publish.header.stamp = rospy.Time.now()
+                    cmd_to_publish.vel_right = self.v
+                    cmd_to_publish.vel_left = self.v
+                    self.pub.publish(cmd_to_publish)
+                    rospy.sleep(2)
 
-                if self.turns >= 4:
-                    self.state = 'stop'
+                    if self.turns >= 4:
+                        self.state = 'stop'
+                    
+                    self.state = 'pause_F'
                 
-                self.state = 'pause_F'
-            
-            elif self.state == 'turn_left':
-                # First stop
-                self.turns += 1
+                elif self.state == 'turn_right':
+                    # First stop
+                    self.turns += 1
 
-                # Now turn
-                cmd_to_publish.header.stamp = rospy.Time.now()
-                cmd_to_publish.vel_right = -0.2
-                cmd_to_publish.vel_left = 0.3
-                self.pub.publish(cmd_to_publish)
-                rospy.sleep(0.7)
+                    # Now turn
+                    cmd_to_publish.header.stamp = rospy.Time.now()
+                    cmd_to_publish.vel_right = -0.2
+                    cmd_to_publish.vel_left = 0.3
+                    self.pub.publish(cmd_to_publish)
+                    rospy.sleep(0.7)
 
-                self.state = 'pause_T'
+                    self.state = 'pause_T'
+                    
+                    if self.turns >= 4:
+                        self.state = 'stop'
                 
-                if self.turns >= 4:
-                    self.state = 'stop'
-            
-            elif self.state == 'turn_right':
-                # First stop
-                self.turns += 1
+                elif self.state == 'turn_left':
+                    # First stop
+                    self.turns += 1
 
-                # Now turn
-                cmd_to_publish.header.stamp = rospy.Time.now()
-                cmd_to_publish.vel_right = 0.3
-                cmd_to_publish.vel_left = -0.2 
-                self.pub.publish(cmd_to_publish)
-                rospy.sleep(0.7)
+                    # Now turn
+                    cmd_to_publish.header.stamp = rospy.Time.now()
+                    cmd_to_publish.vel_right = 0.3
+                    cmd_to_publish.vel_left = -0.2 
+                    self.pub.publish(cmd_to_publish)
+                    rospy.sleep(0.7)
 
-                self.state = 'pause_T'
+                    self.state = 'pause_T'
+                    
+                    if self.turns >= 4:
+                        self.state = 'stop'
+
+                elif self.state == 'pause_F':
+                    cmd_to_publish.header.stamp = rospy.Time.now()
+                    cmd_to_publish.vel_right = 0
+                    cmd_to_publish.vel_left = 0
+                    self.pub.publish(cmd_to_publish)
+                    rospy.sleep(2)
+
+                    self.state = 'turn_right' if self.turns < 3 else 'turn_right'
+
+                elif self.state == 'pause_T':
+                    cmd_to_publish.header.stamp = rospy.Time.now()
+                    cmd_to_publish.vel_right = 0
+                    cmd_to_publish.vel_left = 0
+                    self.pub.publish(cmd_to_publish)
+                    rospy.sleep(2)
+
+                    self.state = 'forward'
+
+                elif self.state == 'stop':
+                    # cmd_to_publish.header.stamp = rospy.Time.now()
+                    # cmd_to_publish.vel_right = 0
+                    # cmd_to_publish.vel_left = 0
+                    # self.pub.publish(cmd_to_publish)
+                    # rospy.sleep(0.5)
+                    self.avoiding = False
+                    return
                 
-                if self.turns >= 4:
-                    self.state = 'stop'
-
-            elif self.state == 'pause_F':
+                # elif self.state == 'final_stop':
+                #     cmd_to_publish.header.stamp = rospy.Time.now()
+                #     cmd_to_publish.vel_right = 0
+                #     cmd_to_publish.vel_left = 0
+                #     self.pub.publish(cmd_to_publish)
+                #     self.state = 'finished'
+                    
+            except:
+                rospy.loginfo("Except running...")
                 cmd_to_publish.header.stamp = rospy.Time.now()
                 cmd_to_publish.vel_right = 0
                 cmd_to_publish.vel_left = 0
                 self.pub.publish(cmd_to_publish)
-                rospy.sleep(2)
-
-                self.state = 'turning'
-
-            elif self.state == 'pause_T':
-                cmd_to_publish.header.stamp = rospy.Time.now()
-                cmd_to_publish.vel_right = 0
-                cmd_to_publish.vel_left = 0
-                self.pub.publish(cmd_to_publish)
-                rospy.sleep(2)
-
-                self.state = 'forward'
-
-            elif self.state == 'stop':
-                # cmd_to_publish.header.stamp = rospy.Time.now()
-                # cmd_to_publish.vel_right = 0
-                # cmd_to_publish.vel_left = 0
-                # self.pub.publish(cmd_to_publish)
-                # rospy.sleep(0.5)
-                self.avoiding = False
-                return
-            
-            # elif self.state == 'final_stop':
-            #     cmd_to_publish.header.stamp = rospy.Time.now()
-            #     cmd_to_publish.vel_right = 0
-            #     cmd_to_publish.vel_left = 0
-            #     self.pub.publish(cmd_to_publish)
-            #     self.state = 'finished'
-            
-        except:
-            rospy.loginfo("Except running...")
-            cmd_to_publish.header.stamp = rospy.Time.now()
-            cmd_to_publish.vel_right = 0
-            cmd_to_publish.vel_left = 0
-            self.pub.publish(cmd_to_publish)
 
 
 
 
     def movement_control(self, command):
 
-        # check if command is a message of type Twist2DStamped
-        # if isinstance(command, Twist2DStamped):
-        #     v = command.v
-        #     omega = command.omega
-        #     if v == 0 and omega == 0:
-        #         command = "stop"
-        #     else:
-        #         command = "move" 
-
-
         # rosparam set <parameter_name> <value>
 
         if rospy.has_param("velocity"):
-            #Get the values of "kp" and store it in self.kp
-            v = rospy.get_param("velocity")
+            #Get the values of "v" and store it in self.v
+            self.v = rospy.get_param("velocity")
 
         car_cmd = Twist2DStamped()
         
@@ -154,8 +145,10 @@ class SensorObjectDetector:
             car_cmd.v = 0
             car_cmd.omega = 0
             self.pub_cmd.publish(car_cmd)
-            rospy.loginfo("Published stop command to car_cmd_switch_node")
+            rospy.loginfo("Published stop command to car_cmd_switch_node" \
+                            "and starting avoidance procedure")
             
+            self.state = "turn_left"
             self.avoiding = True
             self.avoid_object(self)
         
