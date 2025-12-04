@@ -1,5 +1,6 @@
 <launch>
 
 <node pkg="fp_project" name="sensor_node" output="screen" type="sensor_node.py"/>
+<param name="velocity" value="0"/>
 
 </launch>
