@@ -54,7 +54,7 @@ class ImageProcessor:
         self.ki = 0
         self.kp = 5
         self.kd = 0
-        self.v = 0.4
+        self.v = 0
 
     #new node for subsriber
 
@@ -77,6 +77,7 @@ class ImageProcessor:
 
         self.phi_filt_pub.publish(self.phi_filt)
 
+        # END OF CODE FOR PLOTS
 
         error = (-1)*data.phi
         # Check if parameter "kp" exists first
