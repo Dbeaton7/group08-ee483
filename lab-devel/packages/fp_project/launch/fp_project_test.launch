@@ -1,0 +1,8 @@
+<launch>
+
+<node pkg="fp_project" name="sensor_node" output="screen" type="sensor_node_test.py"/>
+<param name="velocity" value="0.5"/>
+<param name="omega" value="3"/>
+<param name="range" value="0.3"/>
+
+</launch>

@@ -54,7 +54,7 @@ class ImageProcessor:
         self.ki = 0
         self.kp = 5
         self.kd = 0
-        self.v = 0
+        self.v = 0.5
 
     #new node for subsriber
 

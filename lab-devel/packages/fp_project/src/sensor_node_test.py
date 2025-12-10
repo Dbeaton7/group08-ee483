@@ -29,8 +29,10 @@ class SensorObjectDetector:
     def range_publisher(self, msg):
         value = msg.range
         rospy.loginfo(value)
+        
+        range_to_detect = rospy.get_param("range") if rospy.has_param("range") else 0.3
 
-        if msg.range < 0.8:
+        if msg.range < range_to_detect:
             rospy.loginfo("Object Detected within 0.3 meters!")
             # self.movement_control("stop", value)
             
@@ -74,7 +76,9 @@ class SensorObjectDetector:
 
     def avoid_object(self, range):
 
-        if range < 0.8:
+        range_to_detect = rospy.get_param("range") if rospy.has_param("range") else 0.3
+
+        if range < range_to_detect:
             car_cmd = Twist2DStamped()
             car_cmd.v = 0
             car_cmd.omega = rospy.get_param("omega") if rospy.has_param("omega") else 0.5
